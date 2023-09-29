@@ -6,7 +6,7 @@ export default defineNuxtConfig({
     public: {
       sentry: {
         dsn: "",
-      }
-    }
-  }
-})
+      },
+    },
+  },
+});

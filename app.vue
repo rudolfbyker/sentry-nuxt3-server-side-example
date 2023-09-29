@@ -11,13 +11,13 @@
 <script setup lang="ts">
 const runtimeConfig = useRuntimeConfig();
 
-const a = useAsyncData('foo', () => {
+const a = useAsyncData("foo", () => {
   console.log("Starting fetch …");
-  return fetch("https://www.boredapi.com/api/activity").then(res => {
+  return fetch("https://www.boredapi.com/api/activity").then((res) => {
     console.log("Finished fetch!");
     return res.json();
   });
-})
+});
 
 function reload() {
   window.location.reload();
