@@ -1,4 +1,5 @@
 import {
+  captureException,
   getCurrentHub,
   init,
   Integrations,
@@ -26,6 +27,10 @@ export default defineNitroPlugin((nitroApp) => {
     tracesSampleRate: 1,
     profilesSampleRate: 1,
     debug: true,
+  });
+
+  nitroApp.hooks.hook("error", (error) => {
+    captureException(error);
   });
 
   nitroApp.hooks.hook("request", (event: H3Event) => {
