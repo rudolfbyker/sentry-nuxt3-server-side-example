@@ -12,9 +12,9 @@
 const runtimeConfig = useRuntimeConfig();
 
 const a = useAsyncData("foo", () => {
-  console.log("Starting fetch …");
+  process.stdout.write("Starting fetch …\n");
   return fetch("https://www.boredapi.com/api/activity").then((res) => {
-    console.log("Finished fetch!");
+    process.stdout.write("Finished fetch!\n");
     return res.json();
   });
 });

@@ -9,15 +9,15 @@
  * - afterResponse 2
  */
 export default defineNitroPlugin((nitroApp) => {
-  console.log("init");
+  process.stdout.write("plugin init\n");
 
   nitroApp.hooks.hook("request", (event) => {
     const randomNumber = Math.floor(Math.random() * 1000);
-    console.log("request", randomNumber);
+    process.stdout.write(`plugin request ${randomNumber}\n`);
     (event as any).randomNumber = randomNumber;
   });
 
   nitroApp.hooks.hook("afterResponse", (event) => {
-    console.log("afterResponse", (event as any).randomNumber);
+    process.stdout.write(`plugin afterResponse ${(event as any).randomNumber}\n`);
   });
 });
