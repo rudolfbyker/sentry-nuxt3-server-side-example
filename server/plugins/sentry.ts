@@ -1,18 +1,11 @@
 import {
   captureException,
-  getCurrentHub,
+  close,
+  Handlers,
   init,
   Integrations,
-  startTransaction,
-  Transaction,
-  close,
 } from "@sentry/node";
 import { ProfilingIntegration } from "@sentry/profiling-node";
-import { H3Event } from "h3";
-
-type H3EventWithSentryTransaction = H3Event & {
-  sentryTransaction?: Transaction;
-};
 
 export default defineNitroPlugin((nitroApp) => {
   const runtimeConfig = useRuntimeConfig();
@@ -30,30 +23,27 @@ export default defineNitroPlugin((nitroApp) => {
     debug: true,
   });
 
-  nitroApp.hooks.hook("error", (error) => {
-    captureException(error);
+  const sentryErrorHandler = Handlers.errorHandler();
+  nitroApp.hooks.hook("error", (error, context) => {
+    if (context.event) {
+      sentryErrorHandler(
+        error,
+        context.event.node.req,
+        context.event.node.res,
+        () => {},
+      );
+    } else {
+      captureException(error);
+    }
   });
 
-  nitroApp.hooks.hook("request", (event: H3Event) => {
-    // Start a transaction for this event.
-    const transaction = startTransaction({
-      name: `Nitro ${event.path}`,
-      op: "http.server",
-    });
-
-    // Store the transaction on the event so that we know which one to finish later.
-    (event as H3EventWithSentryTransaction).sentryTransaction = transaction;
-
-    // Set the transaction on the current scope to associate with errors and get included span instrumentation.
-    // FIXME: Since Nitro is concurrent, a new request may start before the previous one finishes.
-    //   In this case, creating a new transaction will drop the previous one.
-    getCurrentHub().configureScope((scope) => scope.setSpan(transaction));
-  });
-
-  nitroApp.hooks.hook("afterResponse", (event: H3Event) => {
-    // Finish the transaction for this event.
-    (event as H3EventWithSentryTransaction).sentryTransaction?.finish();
-  });
+  // Reuse the express middleware provided by Sentry. See https://docs.sentry.io/platforms/node/guides/express/
+  // These should come before all other middleware, so we can't use `h3App.use` because that will add them
+  // to the end of the stack.
+  nitroApp.h3App.stack.unshift(
+    { route: "/", handler: fromNodeMiddleware(Handlers.requestHandler()) },
+    { route: "/", handler: fromNodeMiddleware(Handlers.tracingHandler()) },
+  );
 
   nitroApp.hooks.hookOnce("close", async () => {
     await close(2000);
