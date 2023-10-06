@@ -5,6 +5,7 @@ import {
   Integrations,
   startTransaction,
   Transaction,
+  close,
 } from "@sentry/node";
 import { ProfilingIntegration } from "@sentry/profiling-node";
 import { H3Event } from "h3";
@@ -52,5 +53,9 @@ export default defineNitroPlugin((nitroApp) => {
   nitroApp.hooks.hook("afterResponse", (event: H3Event) => {
     // Finish the transaction for this event.
     (event as H3EventWithSentryTransaction).sentryTransaction?.finish();
+  });
+
+  nitroApp.hooks.hookOnce("close", async () => {
+    await close(2000);
   });
 });
